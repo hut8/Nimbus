@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Win32;
 
 namespace Nimbus
 {
@@ -25,10 +27,24 @@ namespace Nimbus
             InitializeComponent();
         }
 
-        private void Submit_Click(object sender, RoutedEventArgs e)
+        private async void Submit_Click(object sender, RoutedEventArgs e)
         {
-            //var media = new SoundCloudMedia("");
-            //media.Download();
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Title = "Save MP3";
+            dialog.DefaultExt = ".mp3";
+            dialog.OverwritePrompt = true;
+            dialog.ValidateNames = true;
+
+            bool? confirm = dialog.ShowDialog();
+            if (!(confirm.HasValue && confirm.Value)) return;
+
+            var media = new SoundCloudMedia(URL.Text);
+
+            using(var destination = File.OpenWrite(dialog.FileName))
+            {
+                await media.Download(destination);
+            }
+            
         }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using HtmlAgilityPack;
+using Newtonsoft.Json;
 using System.IO;
-using System.Net.Http;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Nimbus
 {
@@ -12,6 +14,7 @@ namespace Nimbus
 
         private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
         private static readonly Regex _trackIdRegex = new Regex(@"soundcloud:tracks:(?<track_id>\d+)");
+        private static readonly string _streamInfoUrlFormat = @"https://api.soundcloud.com/i1/tracks/{0}/streams?client_id={1}";
 
         public SoundCloudMedia(string url)
         {
@@ -58,6 +61,13 @@ namespace Nimbus
                 .Distinct()
                 .Single();
 
+            // Find URL of MP3
+            // https://api.soundcloud.com/i1/tracks/102140448/streams?client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea
+            string streamInfoURL = string.Format(_streamInfoUrlFormat, trackId, clientId);
+            string streamInfoJSON = await client.GetStringAsync(streamInfoURL);
+            dynamic streamInfo = JsonConvert.DeserializeObject(streamInfoJSON);
+            string songDataURL = streamInfo.http_mp3_128_url;
+            
         }
     }
 }

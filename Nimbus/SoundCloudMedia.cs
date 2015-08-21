@@ -2,12 +2,15 @@
 using System.IO;
 using System.Net.Http;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Nimbus
 {
     public class SoundCloudMedia
     {
         public string URL { get; private set; }
+
+        private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
 
         public SoundCloudMedia(string url)
         {
@@ -31,6 +34,17 @@ namespace Nimbus
                 .Where(src => src.Contains("app-"))
                 .Distinct()
                 .Single();
+
+            // Download the JS file containing the client_id
+            // client_id:"02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea"
+            var appJs = await client.GetStringAsync(appJsUrl);
+            string clientId = _clientIdRegex
+                .Matches(appJs)
+                .Cast<Match>()
+                .Select(x => x.Groups["client_id"].Value)
+                .Distinct()
+                .Single(); // Make sure they are all equal
+
         }
     }
 }

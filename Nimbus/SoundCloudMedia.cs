@@ -5,12 +5,14 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nimbus
 {
     public class SoundCloudMedia
     {
         public string URL { get; private set; }
+        public CancellationToken CancelDownloadToken { get; private set; }
 
         private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
         private static readonly Regex _trackIdRegex = new Regex(@"soundcloud:tracks:(?<track_id>\d+)");
@@ -19,9 +21,10 @@ namespace Nimbus
         public SoundCloudMedia(string url)
         {
             URL = url;
+            CancelDownloadToken = new CancellationToken();
         }
 
-        public async void Download(Stream destination)
+        public async Task Download(Stream destination)
         {
             HttpClient client = new HttpClient();
             client.MaxResponseContentBufferSize = 1024 * 1024 * 5;
@@ -67,7 +70,11 @@ namespace Nimbus
             string streamInfoJSON = await client.GetStringAsync(streamInfoURL);
             dynamic streamInfo = JsonConvert.DeserializeObject(streamInfoJSON);
             string songDataURL = streamInfo.http_mp3_128_url;
-            
+
+            // Save the song locally
+            Stream songSource = await client.GetStreamAsync(songDataURL);
+            await songSource.CopyToAsync(destination, 1024 * 1024, CancelDownloadToken);
+
         }
     }
 }

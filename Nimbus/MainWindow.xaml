@@ -1,0 +1,11 @@
+﻿<Window x:Class="Nimbus.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nimbus"  Width="525">
+    <StackPanel Margin="0,0,0,274">
+        <TextBox Name="URL"></TextBox>
+        <Button Name="Submit" Click="Submit_Click">
+            Submit
+        </Button>
+    </StackPanel>
+</Window>

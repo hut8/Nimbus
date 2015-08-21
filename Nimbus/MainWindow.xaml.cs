@@ -39,10 +39,9 @@ namespace Nimbus
             bool? confirm = dialog.ShowDialog();
             if (!(confirm.HasValue && confirm.Value)) return;
 
-            var media = new SoundCloudMedia(URL.Text);
-
             using (var destination = File.OpenWrite(dialog.FileName))
             {
+                var media = new SoundCloudMedia(URL.Text);
                 await media.Download(destination);
             }
 

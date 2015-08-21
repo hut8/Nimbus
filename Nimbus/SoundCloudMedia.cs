@@ -11,6 +11,7 @@ namespace Nimbus
         public string URL { get; private set; }
 
         private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
+        private static readonly Regex _trackIdRegex = new Regex(@"soundcloud:tracks:(?<track_id>\d+)");
 
         public SoundCloudMedia(string url)
         {
@@ -44,6 +45,18 @@ namespace Nimbus
                 .Select(x => x.Groups["client_id"].Value)
                 .Distinct()
                 .Single(); // Make sure they are all equal
+
+            // Find track_id
+            // Look in script tags for this:
+            // soundcloud:tracks:193781466
+            var trackId = doc.DocumentNode
+                .SelectNodes("//script[not(@src)]")
+                .Select(node => node.InnerText) // strings containing JavaScript
+                .Select(js => _trackIdRegex.Match(js)) // Regex.Match
+                .Select(match => match.Groups["track_id"].Value) // strings of track IDs
+                .Where(x => !string.IsNullOrEmpty(x))
+                .Distinct()
+                .Single();
 
         }
     }

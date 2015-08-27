@@ -29,22 +29,9 @@ namespace Nimbus
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
         {
-            SaveFileDialog dialog = new SaveFileDialog()
-            {
-                Title = "Save MP3",
-                DefaultExt = ".mp3",
-                OverwritePrompt = true,
-                ValidateNames = true
-            };
-            bool? confirm = dialog.ShowDialog();
-            if (!(confirm.HasValue && confirm.Value)) return;
-
-            using (var destination = File.OpenWrite(dialog.FileName))
-            {
-                var media = new SoundCloudMedia(URL.Text);
-                await media.Download(destination);
-            }
-
+            var media = new SoundCloudMedia(URL.Text);
+            await media.DiscoverData();
+            await media.Download();
         }
     }
 }

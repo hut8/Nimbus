@@ -47,6 +47,28 @@ namespace Nimbus
         private static readonly Regex _trackIdRegex = new Regex(@",""id"":(?<track_id>\d+)");
         private static readonly string _streamInfoUrlFormat = @"https://api.soundcloud.com/i1/tracks/{0}/streams?client_id={1}";
 
+        // Make sure the URL looks like this:
+        // https://soundcloud.com/majorlazer/major-lazer-dj-snake-lean-on-feat-mo
+        public static bool ValidateUri(string uriString)
+        {
+            Uri songUri = null;
+            try
+            {
+               songUri  = new Uri(uriString);
+            }
+            catch (UriFormatException e)
+            {
+                return false;
+            }
+
+            if (!(songUri.Host == "soundcloud.com" || songUri.Host == "www.soundcloud.com"))
+            {
+                return false;
+            }
+            
+            return true;
+        }
+
         public SoundCloudMedia(string url)
             : this(url, DefaultDownloadDirectory)
         { }
@@ -54,6 +76,7 @@ namespace Nimbus
         public SoundCloudMedia(string url, string downloadBase)
         {
             URL = url;
+
             DownloadDirectory = downloadBase;
             CancelDownloadToken = new CancellationToken();
             _discovered = false;

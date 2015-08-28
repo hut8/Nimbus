@@ -44,7 +44,7 @@ namespace Nimbus
         }
 
         private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
-        private static readonly Regex _trackIdRegex = new Regex(@"soundcloud:tracks:(?<track_id>\d+)");
+        private static readonly Regex _trackIdRegex = new Regex(@",""id"":(?<track_id>\d+)");
         private static readonly string _streamInfoUrlFormat = @"https://api.soundcloud.com/i1/tracks/{0}/streams?client_id={1}";
 
         public SoundCloudMedia(string url)
@@ -128,8 +128,7 @@ namespace Nimbus
                 .Single(); // Make sure they are all equal
 
             // Find track_id
-            // Look in script tags for this:
-            // soundcloud:tracks:193781466
+            // Look in script tags for JSON
             _trackId = doc.DocumentNode
                 .SelectNodes("//script[not(@src)]")
                 .Select(node => node.InnerText) // strings containing JavaScript

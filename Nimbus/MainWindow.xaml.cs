@@ -35,17 +35,24 @@ namespace Nimbus
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
         {
-            if (SoundCloudMedia.ValidateUri(_viewModel.Uri))
-            {
-                var media = new SoundCloudMedia(_viewModel.Uri, _viewModel.DestinationDirectory);
-                media.ProcessStateChange += media_ProcessStateChange;
-                media.TitleChange += media_TitleChange;
-                await media.DiscoverData();
-                await media.Download();
-            }
-            else
+            if (!SoundCloudMedia.ValidateUri(_viewModel.Uri))
             {
                 MessageBox.Show("That doesn't look like a valid SoundCloud track URL");
+                return;
+            }
+
+            var media = new SoundCloudMedia(_viewModel.Uri, _viewModel.DestinationDirectory);
+            media.ProcessStateChange += media_ProcessStateChange;
+            media.TitleChange += media_TitleChange;
+            await media.DiscoverData();
+            try
+            {
+                await media.Download();
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show(ex.Message, "Download error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

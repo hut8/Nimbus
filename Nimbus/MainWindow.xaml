@@ -1,8 +1,10 @@
 ﻿<Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="Nimbus.MainWindow"
-        Title="Nimbus" ResizeMode="CanResizeWithGrip" SizeToContent="WidthAndHeight" Height="183" d:DesignWidth="419">
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:Nimbus" mc:Ignorable="d" x:Class="Nimbus.MainWindow"
+    <Window.Background>
+        <ImageBrush ImageSource="Resources/8720002090_6dc68cc98e_h.jpg" Stretch="UniformToFill"  />
+    </Window.Background>
     <Grid Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

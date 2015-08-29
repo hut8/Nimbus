@@ -15,6 +15,7 @@ namespace Nimbus
     {
         protected HttpClient _httpClient;
         public event Action<bool> ProcessStateChange;
+        public event Action<string> TitleChange;
 
         protected string _downloadDirectory;
         protected string _trackId;
@@ -52,12 +53,16 @@ namespace Nimbus
         // https://soundcloud.com/majorlazer/major-lazer-dj-snake-lean-on-feat-mo
         public static bool ValidateUri(string uriString)
         {
+            if (string.IsNullOrWhiteSpace(uriString))
+            {
+                return false;
+            }
             Uri songUri = null;
             try
             {
                songUri  = new Uri(uriString);
             }
-            catch (UriFormatException e)
+            catch (UriFormatException)
             {
                 return false;
             }
@@ -114,6 +119,7 @@ namespace Nimbus
                 if (_trackData == null)
                 {
                     _trackData = _fetchTrackData();
+                    TitleChange((string)TrackData.title);
                 }
                 return _trackData;
             }
@@ -130,6 +136,7 @@ namespace Nimbus
         public async Task DiscoverData()
         {
             ProcessStateChange(true);
+            TitleChange("Fetching song metadata...");
             // Download the URL given
             var html = await _httpClient.GetStringAsync(URL);
 

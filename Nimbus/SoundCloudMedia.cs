@@ -45,6 +45,7 @@ namespace Nimbus
             }
         }
 
+        private static readonly string _naughtyCharacterPattern = @"[^\w\.& -]";
         private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
         private static readonly Regex _trackIdRegex = new Regex(@",""id"":(?<track_id>\d+)");
         private static readonly string _streamInfoUrlFormat = @"https://api.soundcloud.com/i1/tracks/{0}/streams?client_id={1}";
@@ -96,7 +97,8 @@ namespace Nimbus
         {
             get
             {
-                return Path.Combine(DownloadDirectory, string.Format("{0}.mp3", Title));
+                string cleanTitle = Regex.Replace(Title, _naughtyCharacterPattern, "", RegexOptions.None);
+                return Path.Combine(DownloadDirectory, string.Format("{0}.mp3", cleanTitle));
             }
         }
 
@@ -186,6 +188,10 @@ namespace Nimbus
             if (!Directory.Exists(DownloadDirectory))
             {
                 Directory.CreateDirectory(DownloadDirectory);
+            }
+            if (File.Exists(DownloadPath))
+            {
+                throw new IOException("File already exists");
             }
             using (var destination = File.OpenWrite(DownloadPath))
             {

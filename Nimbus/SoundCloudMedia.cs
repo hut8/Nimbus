@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -14,7 +15,8 @@ namespace Nimbus
     public class SoundCloudMedia
     {
         protected HttpClient _httpClient;
-        public event Action<bool> ProcessStateChange;
+        protected WebClient _webClient;
+        public event Action<TrackState> StateChange;
         public event Action<string> TitleChange;
 
         protected string _downloadDirectory;
@@ -61,7 +63,7 @@ namespace Nimbus
             Uri songUri = null;
             try
             {
-               songUri  = new Uri(uriString);
+                songUri = new Uri(uriString);
             }
             catch (UriFormatException)
             {
@@ -72,7 +74,7 @@ namespace Nimbus
             {
                 return false;
             }
-            
+
             return true;
         }
 
@@ -137,8 +139,7 @@ namespace Nimbus
 
         public async Task DiscoverData()
         {
-            ProcessStateChange(true);
-            TitleChange("Fetching song metadata...");
+            StateChange(TrackState.FetchingMetadata);
             // Download the URL given
             var html = await _httpClient.GetStringAsync(URL);
 
@@ -178,12 +179,17 @@ namespace Nimbus
             string streamInfoJSON = await _httpClient.GetStringAsync(streamInfoURL);
             dynamic streamInfo = JsonConvert.DeserializeObject(streamInfoJSON);
             _songDataURL = streamInfo.http_mp3_128_url;
+            if (string.IsNullOrWhiteSpace(_songDataURL))
+            {
+                // TODO Fix this
+                throw new InvalidDataException("Could not find the HTTP MP3 URL. Probably got some playlist.");
+            }
 
             _discovered = true;
-            ProcessStateChange(false);
+            StateChange(TrackState.Idle);
         }
 
-        public async Task Download()
+        public async Task Download(DownloadProgressChangedEventHandler notifier)
         {
             if (!Directory.Exists(DownloadDirectory))
             {
@@ -193,20 +199,17 @@ namespace Nimbus
             {
                 throw new IOException("File already exists");
             }
-            using (var destination = File.OpenWrite(DownloadPath))
-            {
-                await Download(destination);
-            }
+
+            if (!_discovered) { await DiscoverData(); }
+            
+            // Save the song locally
+            StateChange(TrackState.Downloading);
+            _webClient = new WebClient();
+            _webClient.DownloadProgressChanged += notifier;
+            string dlPath = DownloadPath;
+            await _webClient.DownloadFileTaskAsync(_songDataURL, dlPath);
+            StateChange(TrackState.Complete);
         }
 
-        public async Task Download(Stream destination)
-        {
-            ProcessStateChange(true);
-            if (!_discovered) { await DiscoverData(); }
-            // Save the song locally
-            Stream songSource = await _httpClient.GetStreamAsync(_songDataURL);
-            await songSource.CopyToAsync(destination, 1024 * 1024, CancelDownloadToken);
-            ProcessStateChange(false);
-        }
     }
 }

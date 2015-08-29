@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using Microsoft.Win32;
 using WinForms = System.Windows.Forms;
 using System.Diagnostics;
+using System.Net;
 
 namespace Nimbus
 {
@@ -42,12 +43,12 @@ namespace Nimbus
             }
 
             var media = new SoundCloudMedia(_viewModel.Uri, _viewModel.DestinationDirectory);
-            media.ProcessStateChange += media_ProcessStateChange;
+            media.StateChange += media_ProcessStateChange;
             media.TitleChange += media_TitleChange;
             await media.DiscoverData();
             try
             {
-                await media.Download();
+                await media.Download(_webClient_DownloadProgressChanged);
             }
             catch (IOException ex)
             {
@@ -61,9 +62,15 @@ namespace Nimbus
             _viewModel.Title = obj;
         }
 
-        void media_ProcessStateChange(bool obj)
+        void media_ProcessStateChange(TrackState obj)
         {
-            _viewModel.IsProcessing = obj;
+            _viewModel.TrackState = obj;
+        }
+
+        void _webClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            _viewModel.TotalSize = e.TotalBytesToReceive;
+            _viewModel.DownloadedSize = e.BytesReceived;
         }
 
         private void DestinationPath_MouseDown(object sender, MouseButtonEventArgs e)

@@ -22,16 +22,32 @@ namespace Nimbus
     /// </summary>
     public partial class MainWindow : Window
     {
+        protected ViewModel _viewModel;
+
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = _viewModel = new ViewModel();
         }
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
         {
-            var media = new SoundCloudMedia(URL.Text);
-            await media.DiscoverData();
-            await media.Download();
+            if (SoundCloudMedia.ValidateUri(URL.Text))
+            {
+                var media = new SoundCloudMedia(URL.Text);
+                media.ProcessStateChange += media_ProcessStateChange;
+                await media.DiscoverData();
+                await media.Download();
+            }
+            else
+            {
+                MessageBox.Show("That doesn't look like a valid SoundCloud track URL");
+            }
+        }
+
+        void media_ProcessStateChange(bool obj)
+        {
+            _viewModel.IsProcessing = obj;
         }
     }
 }

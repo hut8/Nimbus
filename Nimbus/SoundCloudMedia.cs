@@ -14,6 +14,7 @@ namespace Nimbus
     public class SoundCloudMedia
     {
         protected HttpClient _httpClient;
+        public event Action<bool> ProcessStateChange;
 
         protected string _downloadDirectory;
         protected string _trackId;
@@ -128,6 +129,7 @@ namespace Nimbus
 
         public async Task DiscoverData()
         {
+            ProcessStateChange(true);
             // Download the URL given
             var html = await _httpClient.GetStringAsync(URL);
 
@@ -169,6 +171,7 @@ namespace Nimbus
             _songDataURL = streamInfo.http_mp3_128_url;
 
             _discovered = true;
+            ProcessStateChange(false);
         }
 
         public async Task Download()
@@ -185,10 +188,12 @@ namespace Nimbus
 
         public async Task Download(Stream destination)
         {
+            ProcessStateChange(true);
             if (!_discovered) { await DiscoverData(); }
             // Save the song locally
             Stream songSource = await _httpClient.GetStreamAsync(_songDataURL);
             await songSource.CopyToAsync(destination, 1024 * 1024, CancelDownloadToken);
+            ProcessStateChange(false);
         }
     }
 }

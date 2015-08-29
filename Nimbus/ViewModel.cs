@@ -24,5 +24,10 @@ namespace Nimbus
                 return IsUriValid && !IsProcessing;
             }
         }
+
+        public ViewModel()
+        {
+            Title = "Nimbus";
+        }
     }
 }

@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 using WinForms = System.Windows.Forms;
+using System.Diagnostics;
 
 namespace Nimbus
 {
@@ -66,6 +67,11 @@ namespace Nimbus
             {
                 _viewModel.DestinationDirectory = dialog.SelectedPath;
             }
+        }
+
+        private void OpenDestination_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(_viewModel.DestinationDirectory);
         }
 
     }

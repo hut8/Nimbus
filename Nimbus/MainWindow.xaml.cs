@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using WinForms = System.Windows.Forms;
 
 namespace Nimbus
 {
@@ -56,5 +57,16 @@ namespace Nimbus
         {
             _viewModel.IsProcessing = obj;
         }
+
+        private void DestinationPath_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var dialog = new WinForms.FolderBrowserDialog();
+            WinForms.DialogResult result = dialog.ShowDialog();
+            if (result == WinForms.DialogResult.OK)
+            {
+                _viewModel.DestinationDirectory = dialog.SelectedPath;
+            }
+        }
+
     }
 }

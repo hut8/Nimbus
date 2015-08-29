@@ -28,14 +28,16 @@ namespace Nimbus
         {
             InitializeComponent();
             DataContext = _viewModel = new ViewModel();
+            _viewModel.DestinationDirectory = SoundCloudMedia.DefaultDownloadDirectory;
         }
 
         private async void Submit_Click(object sender, RoutedEventArgs e)
         {
-            if (SoundCloudMedia.ValidateUri(URL.Text))
+            if (SoundCloudMedia.ValidateUri(_viewModel.Uri))
             {
-                var media = new SoundCloudMedia(URL.Text);
+                var media = new SoundCloudMedia(_viewModel.Uri, _viewModel.DestinationDirectory);
                 media.ProcessStateChange += media_ProcessStateChange;
+                media.TitleChange += media_TitleChange;
                 await media.DiscoverData();
                 await media.Download();
             }
@@ -43,6 +45,11 @@ namespace Nimbus
             {
                 MessageBox.Show("That doesn't look like a valid SoundCloud track URL");
             }
+        }
+
+        void media_TitleChange(string obj)
+        {
+            _viewModel.Title = obj;
         }
 
         void media_ProcessStateChange(bool obj)

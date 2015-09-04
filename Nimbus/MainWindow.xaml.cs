@@ -45,12 +45,11 @@ namespace Nimbus
             var media = new SoundCloudMedia(_viewModel.Uri, _viewModel.DestinationDirectory);
             media.StateChange += media_ProcessStateChange;
             media.TitleChange += media_TitleChange;
-            await media.DiscoverData();
             try
             {
                 await media.Download(_webClient_DownloadProgressChanged);
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Download error",
                     MessageBoxButton.OK, MessageBoxImage.Error);

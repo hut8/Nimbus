@@ -137,7 +137,7 @@ namespace Nimbus
             }
         }
 
-        public async Task DiscoverData()
+        protected async Task DiscoverData()
         {
             StateChange(TrackState.FetchingMetadata);
             // Download the URL given
@@ -191,24 +191,32 @@ namespace Nimbus
 
         public async Task Download(DownloadProgressChangedEventHandler notifier)
         {
-            if (!Directory.Exists(DownloadDirectory))
+            try
             {
-                Directory.CreateDirectory(DownloadDirectory);
-            }
-            if (File.Exists(DownloadPath))
-            {
-                throw new IOException("File already exists");
-            }
+                if (!_discovered) { await DiscoverData(); }
 
-            if (!_discovered) { await DiscoverData(); }
-            
-            // Save the song locally
-            StateChange(TrackState.Downloading);
-            _webClient = new WebClient();
-            _webClient.DownloadProgressChanged += notifier;
-            string dlPath = DownloadPath;
-            await _webClient.DownloadFileTaskAsync(_songDataURL, dlPath);
-            StateChange(TrackState.Complete);
+                if (!Directory.Exists(DownloadDirectory))
+                {
+                    Directory.CreateDirectory(DownloadDirectory);
+                }
+                if (File.Exists(DownloadPath))
+                {
+                    throw new IOException("File already exists");
+                }
+
+                // Save the song locally
+                StateChange(TrackState.Downloading);
+                _webClient = new WebClient();
+                _webClient.DownloadProgressChanged += notifier;
+                string dlPath = DownloadPath;
+                await _webClient.DownloadFileTaskAsync(_songDataURL, dlPath);
+                StateChange(TrackState.Complete);
+            }
+            catch (Exception e)
+            {
+                StateChange(TrackState.Idle);
+                throw;
+            }
         }
 
     }

@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Windows;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -198,9 +199,9 @@ namespace Nimbus
             }
             else
             {
-                throw new InvalidDataException(string.Format(
-                    "Could not find the HTTP MP3/Playlist URL. JSON dump:\n{0}",
-                    streamInfoJSON));
+                Clipboard.SetText(streamInfoJSON);
+                throw new InvalidDataException(
+                    "Could not find the HTTP MP3/Playlist URL. JSON dump was copied to clipboard.");
             }
 
             _discovered = true;
@@ -213,7 +214,7 @@ namespace Nimbus
         /// <returns></returns>
         protected async Task DownloadPlaylistToMP3()
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 string playlistString = _webClient.DownloadString(new Uri(_songDataURL));
                 var urlList = playlistString
@@ -226,10 +227,11 @@ namespace Nimbus
                     TitleChange(string.Format("Part {0} of {1}: {2}",
                         urlList.FindIndex(x => x == uri) + 1,
                         urlList.Count,
-                        uri));
-                    byte[] fragment = _webClient.DownloadData(new Uri(uri));
+                        Title));
+                    byte[] fragment = await _webClient.DownloadDataTaskAsync(new Uri(uri));
                     buffer.Write(fragment, 0, fragment.Length);
                 }
+                TitleChange(Title);
                 File.WriteAllBytes(DownloadPath, buffer.ToArray());
             });
         }

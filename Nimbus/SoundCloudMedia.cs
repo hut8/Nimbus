@@ -23,6 +23,9 @@ namespace Nimbus
         protected string _trackId;
         protected bool _discovered;
         protected string _songDataURL;
+        protected enum SoundCloudMediaType { MP3, Playlist }
+        protected SoundCloudMediaType _mediaType;
+        protected DownloadProgressChangedEventHandler _downloadProgressEventHandler;
 
         public string DownloadDirectory
         {
@@ -177,20 +180,81 @@ namespace Nimbus
             // https://api.soundcloud.com/i1/tracks/102140448/streams?client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea
             string streamInfoURL = string.Format(_streamInfoUrlFormat, _trackId, clientId);
             string streamInfoJSON = await _httpClient.GetStringAsync(streamInfoURL);
-            dynamic streamInfo = JsonConvert.DeserializeObject(streamInfoJSON);
-            _songDataURL = streamInfo.http_mp3_128_url;
-            if (string.IsNullOrWhiteSpace(_songDataURL))
+            //dynamic streamInfo = JsonConvert.DeserializeObject(streamInfoJSON);
+            // http_mp3_128_url
+            // hls_mp3_128_url
+            var urlMap = new { http_mp3_128_url = "", hls_mp3_128_url="" };
+            urlMap = JsonConvert.DeserializeAnonymousType(streamInfoJSON, urlMap);
+
+            if (!string.IsNullOrWhiteSpace(urlMap.http_mp3_128_url))
             {
-                // TODO Fix this
-                throw new InvalidDataException("Could not find the HTTP MP3 URL. Probably got some playlist.");
+                _songDataURL = urlMap.http_mp3_128_url;
+                _mediaType = SoundCloudMediaType.MP3;
+            }
+            else if (!string.IsNullOrWhiteSpace(urlMap.hls_mp3_128_url))
+            {
+                _songDataURL = urlMap.hls_mp3_128_url;
+                _mediaType = SoundCloudMediaType.Playlist;
+            }
+            else
+            {
+                throw new InvalidDataException(string.Format(
+                    "Could not find the HTTP MP3/Playlist URL. JSON dump:\n{0}",
+                    streamInfoJSON));
             }
 
             _discovered = true;
             StateChange(TrackState.Idle);
         }
 
+        /// <summary>
+        /// This is some of the worst code I've ever written
+        /// </summary>
+        /// <returns></returns>
+        protected async Task DownloadPlaylistToMP3()
+        {
+            await Task.Run(() =>
+            {
+                string playlistString = _webClient.DownloadString(new Uri(_songDataURL));
+                var urlList = playlistString
+                    .Split('\n')
+                    .Where(line => !(line.StartsWith("#") || string.IsNullOrWhiteSpace(line)))
+                    .ToList();
+                MemoryStream buffer = new MemoryStream(1024 * 1024 * 5);
+                foreach (var uri in urlList)
+                {
+                    TitleChange(string.Format("Part {0} of {1}: {2}",
+                        urlList.FindIndex(x => x == uri) + 1,
+                        urlList.Count,
+                        uri));
+                    byte[] fragment = _webClient.DownloadData(new Uri(uri));
+                    buffer.Write(fragment, 0, fragment.Length);
+                }
+                File.WriteAllBytes(DownloadPath, buffer.ToArray());
+            });
+        }
+
+        protected async Task DownloadDirectMP3()
+        {
+            await _webClient.DownloadFileTaskAsync(_songDataURL, DownloadPath);
+        }
+
+        protected async Task DownloadMP3()
+        {
+            switch(_mediaType)
+            {
+                case SoundCloudMediaType.MP3:
+                    await DownloadDirectMP3();
+                    break;
+                case SoundCloudMediaType.Playlist:
+                    await DownloadPlaylistToMP3();
+                    break;
+            }
+        }
+
         public async Task Download(DownloadProgressChangedEventHandler notifier)
         {
+            _downloadProgressEventHandler = notifier;
             try
             {
                 if (!_discovered) { await DiscoverData(); }
@@ -206,10 +270,11 @@ namespace Nimbus
 
                 // Save the song locally
                 StateChange(TrackState.Downloading);
+
                 _webClient = new WebClient();
-                _webClient.DownloadProgressChanged += notifier;
-                string dlPath = DownloadPath;
-                await _webClient.DownloadFileTaskAsync(_songDataURL, dlPath);
+                _webClient.DownloadProgressChanged += _downloadProgressEventHandler;
+                await DownloadMP3();
+
                 StateChange(TrackState.Complete);
             }
             catch (Exception e)

@@ -17,7 +17,7 @@ namespace Nimbus
         protected string _fullName;
         protected Int32 _mediaCount;
 
-        public InstagramMedia(Uri uri)
+        public InstagramMedia(Uri uri) : base()
         {
             URL = uri;
             CancelDownloadToken = new CancellationToken();
@@ -25,6 +25,7 @@ namespace Nimbus
 
         public override async Task Download()
         {
+            _webClient.DownloadProgressChanged += DownloadProgressChange;
             string html = _webClient.DownloadString(URL);
             var sharedData = ExtractSharedDataJSON(html);
             var user = sharedData.entry_data.ProfilePage[0].user;
@@ -35,21 +36,24 @@ namespace Nimbus
             // page_info
             // nodes
             // count
-            var nodes = media.nodes;
             await Task.Run(() =>
             {
-                ApplyNodes(nodes);
+                ApplyNodes(media.nodes);
             });
         }
 
         protected void ApplyNodes(dynamic nodes)
         {
-            foreach (var node in nodes)
+            IEnumerable<dynamic> media = (IEnumerable<dynamic>)nodes;
+            var imageCount = media.Count();
+
+            foreach (var element in media.Select((n, i) => new { Node = n, Index = i  }))
             {
-                String uriStr = node.display_src;
+                String uriStr = element.Node.display_src;
                 var uri = new Uri(uriStr);
-                OnTitleChange(string.Format("Downloading {0}",
-                    //(string)node.caption,
+                OnTitleChange(string.Format("Downloading image {0} out of {1} ({2})",
+                    element.Index + 1,
+                    imageCount,
                     uri.Segments.Last()));
                 DownloadFile(uri);
             }
@@ -65,6 +69,11 @@ namespace Nimbus
 
             string filename = uri.Segments.Last();
             string dest = Path.Combine(destDir, filename);
+
+            if (File.Exists(dest))
+            {
+                return;
+            }
 
             _webClient.DownloadFile(uri, dest);
         }

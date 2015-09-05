@@ -45,7 +45,9 @@ namespace Nimbus
         {
             get
             {
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "SoundCloud");
+                return Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Nimbus Downloads");
             }
         }
 

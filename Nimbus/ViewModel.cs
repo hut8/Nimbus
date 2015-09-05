@@ -15,6 +15,8 @@ namespace Nimbus
             TrackState = Nimbus.TrackState.Idle;
         }
 
+        protected MediaDispatcher _dispatcher;
+
         public string Uri { get; set; }
         public string DestinationDirectory { get; set; }
         public string Title { get; set; }
@@ -32,7 +34,7 @@ namespace Nimbus
         {
             get
             {
-                return SoundCloudMedia.ValidateUri(Uri);
+                return MediaDispatcher.Instance.IsAcceptable(Uri);
             }
         }
 

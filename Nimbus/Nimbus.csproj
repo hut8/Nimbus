@@ -72,6 +72,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="EnumUtil.cs" />
+    <Compile Include="InstagramMedia.cs" />
+    <Compile Include="Media.cs" />
+    <Compile Include="MediaDispatcher.cs" />
     <Compile Include="ViewModel.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

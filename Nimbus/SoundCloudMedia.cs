@@ -207,9 +207,8 @@ namespace Nimbus
             }
         }
 
-        public async Task Download(DownloadProgressChangedEventHandler notifier)
+        public override async Task Download()
         {
-            _downloadProgressEventHandler = notifier;
             try
             {
                 if (!_discovered) { await DiscoverData(); }
@@ -227,12 +226,12 @@ namespace Nimbus
                 OnStateChange(TrackState.Downloading);
 
                 _webClient = new WebClient();
-                _webClient.DownloadProgressChanged += _downloadProgressEventHandler;
+                _webClient.DownloadProgressChanged += DownloadProgressChange;
                 await DownloadMP3();
 
                 OnStateChange(TrackState.Complete);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 OnStateChange(TrackState.Idle);
                 throw;

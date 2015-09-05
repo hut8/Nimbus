@@ -13,7 +13,7 @@ namespace Nimbus
     {
         protected WebClient _webClient;
         protected string _downloadDirectory;
-        protected DownloadProgressChangedEventHandler _downloadProgressEventHandler;
+        
         protected const string UserAgent = "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)";
 
         public event Action<TrackState> StateChange;
@@ -31,12 +31,15 @@ namespace Nimbus
         }
         public Uri URL { get; protected set; }
         public CancellationToken CancelDownloadToken { get; protected set; }
+        public DownloadProgressChangedEventHandler DownloadProgressChange { get; set; }
 
         public Media()
         {
             _webClient = new WebClient();
             _webClient.Headers.Add("user-agent", UserAgent);
         }
+
+        public abstract Task Download();
 
         public static string DefaultDownloadDirectory
         {

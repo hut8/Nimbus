@@ -36,6 +36,10 @@ namespace Nimbus
                 new MediaFactory(
                     x => SoundCloudMedia.CanAcceptUri(x),
                     x => new SoundCloudMedia(x)));
+            _factories.Add(
+                new MediaFactory(
+                    x => InstagramMedia.CanAcceptUri(x),
+                    x => new InstagramMedia(x)));
         }
 
         public bool IsAcceptable(string uri)

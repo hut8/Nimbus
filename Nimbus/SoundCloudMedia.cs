@@ -41,16 +41,9 @@ namespace Nimbus
         }
 
         public SoundCloudMedia(Uri url)
-            : this(url, DefaultDownloadDirectory)
         {
-        }
-
-        public SoundCloudMedia(Uri url, string downloadBase)
-        {
-            // TODO
             URL = url;
 
-            DownloadDirectory = downloadBase;
             CancelDownloadToken = new CancellationToken();
             _discovered = false;
         }

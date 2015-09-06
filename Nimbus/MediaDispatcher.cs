@@ -35,11 +35,13 @@ namespace Nimbus
             _factories.Add(
                 new MediaFactory(
                     x => SoundCloudMedia.CanAcceptUri(x),
-                    x => new SoundCloudMedia(x)));
+                    x => new SoundCloudMedia(x),
+                    "https://soundcloud.com/[username]/[track]"));
             _factories.Add(
                 new MediaFactory(
                     x => InstagramMedia.CanAcceptUri(x),
-                    x => new InstagramMedia(x)));
+                    x => new InstagramMedia(x),
+                    "https://instagram.com/[username]/"));
         }
 
         public bool IsAcceptable(string uri)
@@ -58,28 +60,6 @@ namespace Nimbus
                     .Where(x => x.CanAccept(uri))
                     .Single()
                     .Construct(uri);
-        }
-    }
-
-    public class MediaFactory
-    {
-        private Func<Uri, bool> _predicate;
-        private Func<Uri, Media> _constructor;
-
-        public MediaFactory(Func<Uri, bool> predicate, Func<Uri, Media> constructor)
-        {
-            _predicate = predicate;
-            _constructor = constructor;
-        }
-
-        public bool CanAccept(Uri uri)
-        {
-            return _predicate(uri);
-        }
-
-        public Media Construct(Uri uri)
-        {
-            return _constructor(uri);
         }
     }
 }

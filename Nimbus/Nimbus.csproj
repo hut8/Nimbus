@@ -35,6 +35,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Flurl">
+      <HintPath>..\packages\Flurl.1.0.10\lib\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+MonoTouch10\Flurl.dll</HintPath>
+    </Reference>
+    <Reference Include="Flurl.Http">
+      <HintPath>..\packages\Flurl.Http.0.6.4\lib\net45\Flurl.Http.dll</HintPath>
+    </Reference>
     <Reference Include="HtmlAgilityPack">
       <HintPath>..\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
     </Reference>
@@ -75,6 +81,7 @@
     <Compile Include="InstagramMedia.cs" />
     <Compile Include="Media.cs" />
     <Compile Include="MediaDispatcher.cs" />
+    <Compile Include="MediaFactory.cs" />
     <Compile Include="ViewModel.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

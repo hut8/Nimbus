@@ -56,6 +56,8 @@ namespace Nimbus
             {
                 MessageBox.Show(ex.Message, "Download error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                Clipboard.SetText(ex.StackTrace);
+                LogBox.Text = ex.StackTrace;
             }
         }
 

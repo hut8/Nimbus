@@ -39,6 +39,8 @@ namespace Nimbus
             _client = new FlurlClient()
                 .EnableCookies()
                 .WithHeader("User-Agent", UserAgent);
+
+            CancelDownloadToken = new CancellationToken();
         }
 
         public abstract Task Download();

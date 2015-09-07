@@ -25,7 +25,6 @@ namespace Nimbus
             : base()
         {
             URL = uri;
-            CancelDownloadToken = new CancellationToken();
         }
 
         public override async Task Download()
@@ -33,7 +32,6 @@ namespace Nimbus
             string html = await _client
                 .WithUrl(new Flurl.Url(URL.ToString()))
                 .GetStringAsync();
-            // = _webClient.DownloadString(URL);
             var sharedData = ExtractSharedDataJSON(html);
             var user = sharedData.entry_data.ProfilePage[0].user;
             _username = user.username;
@@ -41,22 +39,23 @@ namespace Nimbus
             _fullName = user.full_name;
             var media = user.media;
             _mediaCount = media.count;
-            string startCursor = media.page_info.start_cursor;
-            string endCursor = media.page_info.end_cursor;
-            int retrievedMediaCount = 0;
+
+            string csrftoken = _client.GetCookies()["csrftoken"].Value;
+            _client.HttpClient.DefaultRequestHeaders.Referrer = URL;
+            _client.HttpClient.DefaultRequestHeaders.Add("X-CSRFToken", csrftoken);
+            _client.HttpClient.DefaultRequestHeaders.Add("X-Instagram-AJAX", "1");
+            _client.HttpClient.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
 
             // page_info
             await Task.Run(async () =>
             {
-                ApplyNodes(media.nodes);
-                dynamic page = await MediaPage(endCursor);
-                ApplyNodes(page.nodes);
+                do {
+                    ApplyNodes(media.nodes);
+                    string endCursor = media.page_info.end_cursor;
+                    dynamic page = await MediaPage(endCursor);
+                    media = page.media;
+                } while (media.page_info.has_next_page);
             });
-
-            while (_mediaCount > retrievedMediaCount)
-            {
-                break;
-            }
         }
 
         protected async Task<dynamic> MediaPage(string startCursor)
@@ -91,13 +90,9 @@ namespace Nimbus
             }
              }";
             string q = qFormat;//string.Format(qFormat, _userId, startCursor);
-            string csrftoken = _client.GetCookies()["csrftoken"].Value;
+
             dynamic response = await _client
                 .WithUrl(new Flurl.Url("https://instagram.com/query/"))
-                .WithHeader("Referer", URL.ToString())
-                .WithHeader("X-CSRFToken", csrftoken)
-                .WithHeader("X-Instagram-AJAX", "1")
-                .WithHeader("X-Requested-With", "XMLHttpRequest")
                 .PostUrlEncodedAsync(new {
                      q = q,
                      @ref = "users::show"

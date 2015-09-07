@@ -6,18 +6,23 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using System.Net.Http;
 using Newtonsoft.Json;
 using System.IO;
+using Flurl.Http;
 
 namespace Nimbus
 {
     public class InstagramMedia : Media
     {
         protected string _username;
+        protected string _userId;
         protected string _fullName;
         protected Int32 _mediaCount;
-
-        public InstagramMedia(Uri uri) : base()
+        protected const string _userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36";
+        
+        public InstagramMedia(Uri uri)
+            : base()
         {
             URL = uri;
             CancelDownloadToken = new CancellationToken();
@@ -25,21 +30,80 @@ namespace Nimbus
 
         public override async Task Download()
         {
-            _webClient.DownloadProgressChanged += DownloadProgressChange;
-            string html = _webClient.DownloadString(URL);
+            string html = await _client
+                .WithUrl(new Flurl.Url(URL.ToString()))
+                .GetStringAsync();
+            // = _webClient.DownloadString(URL);
             var sharedData = ExtractSharedDataJSON(html);
             var user = sharedData.entry_data.ProfilePage[0].user;
             _username = user.username;
+            _userId = user.id;
             _fullName = user.full_name;
             var media = user.media;
             _mediaCount = media.count;
+            string startCursor = media.page_info.start_cursor;
+            string endCursor = media.page_info.end_cursor;
+            int retrievedMediaCount = 0;
+
             // page_info
-            // nodes
-            // count
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 ApplyNodes(media.nodes);
+                dynamic page = await MediaPage(endCursor);
+                ApplyNodes(page.nodes);
             });
+
+            while (_mediaCount > retrievedMediaCount)
+            {
+                break;
+            }
+        }
+
+        protected async Task<dynamic> MediaPage(string startCursor)
+        {
+            // POST to 
+            // POST Params (urlencoded):
+            var qFormat = @"ig_user(" + _userId + ") { media.after(" + startCursor + @", 12) {
+              count,
+              nodes {
+                caption,
+                code,
+                comments {
+                  count
+                },
+                date,
+                dimensions {
+                  height,
+                  width
+                },
+                display_src,
+                id,
+                is_video,
+                likes {
+                  count
+                },
+                owner {
+                  id
+                },
+                thumbnail_src
+              },
+              page_info
+            }
+             }";
+            string q = qFormat;//string.Format(qFormat, _userId, startCursor);
+            string csrftoken = _client.GetCookies()["csrftoken"].Value;
+            dynamic response = await _client
+                .WithUrl(new Flurl.Url("https://instagram.com/query/"))
+                .WithHeader("Referer", URL.ToString())
+                .WithHeader("X-CSRFToken", csrftoken)
+                .WithHeader("X-Instagram-AJAX", "1")
+                .WithHeader("X-Requested-With", "XMLHttpRequest")
+                .PostUrlEncodedAsync(new {
+                     q = q,
+                     @ref = "users::show"
+                 })
+                .ReceiveJson();
+            return response;
         }
 
         protected void ApplyNodes(dynamic nodes)
@@ -47,7 +111,7 @@ namespace Nimbus
             IEnumerable<dynamic> media = (IEnumerable<dynamic>)nodes;
             var imageCount = media.Count();
 
-            foreach (var element in media.Select((n, i) => new { Node = n, Index = i  }))
+            foreach (var element in media.Select((n, i) => new { Node = n, Index = i }))
             {
                 String uriStr = element.Node.display_src;
                 var uri = new Uri(uriStr);
@@ -75,7 +139,9 @@ namespace Nimbus
                 return;
             }
 
-            _webClient.DownloadFile(uri, dest);
+            _client
+                .WithUrl(new Flurl.Url(uri.ToString()))
+                .DownloadFileAsync(destDir);
         }
 
         protected dynamic ExtractSharedDataJSON(string html)
@@ -86,7 +152,6 @@ namespace Nimbus
                 .SelectNodes("//script[not(@src)]")
                 .Single(x => x.InnerText.Contains("window._sharedData"))
                 .InnerText;
-            // FIXME Kind of ugly...
             json = json.Replace("window._sharedData = ", string.Empty).TrimEnd(';');
             return JsonConvert.DeserializeObject(json);
         }

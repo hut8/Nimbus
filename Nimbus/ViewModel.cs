@@ -12,20 +12,21 @@ namespace Nimbus
         {
             Title = "Nimbus";
             TotalSize = long.MaxValue;
-            TrackState = Nimbus.TrackState.Idle;
+            ProcessState = Nimbus.MediaProcessState.Idle;
         }
 
         protected MediaDispatcher _dispatcher;
 
+        public string LogEntries { get; set; }
         public string Uri { get; set; }
         public string DestinationDirectory { get; set; }
         public string Title { get; set; }
-        public TrackState TrackState { get; set; }
+        public MediaProcessState ProcessState { get; set; }
         public bool IsFetchingMetadata
         {
             get
             {
-                return TrackState == TrackState.FetchingMetadata;
+                return ProcessState == MediaProcessState.FetchingMetadata;
             }
         }
         public long TotalSize { get; set; }
@@ -43,21 +44,21 @@ namespace Nimbus
             get
             {
                 return IsUriValid &&
-                    (TrackState == TrackState.Idle || TrackState == TrackState.Complete);
+                    (ProcessState == MediaProcessState.Idle || ProcessState == MediaProcessState.Complete);
             }
         }
 
-        public string TrackStateDescription
+        public string MediaStateDescription
         {
             get
             {
-                return EnumUtil.GetDescription<TrackState>(TrackState);
+                return EnumUtil.GetDescription<MediaProcessState>(ProcessState);
             }
         }
 
     }
 
-    public enum TrackState
+    public enum MediaProcessState
     {
         Idle,
         [Description("Fetching Metadata...")]

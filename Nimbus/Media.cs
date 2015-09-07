@@ -6,17 +6,18 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Flurl.Http;
 
 namespace Nimbus
 {
     public abstract class Media
     {
-        protected WebClient _webClient;
+        protected FlurlClient _client;
         protected string _downloadDirectory;
         
         protected const string UserAgent = "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)";
 
-        public event Action<TrackState> StateChange;
+        public event Action<MediaProcessState> StateChange;
         public event Action<string> TitleChange;
         public string DownloadDirectory
         {
@@ -35,8 +36,9 @@ namespace Nimbus
 
         public Media()
         {
-            _webClient = new WebClient();
-            _webClient.Headers.Add("user-agent", UserAgent);
+            _client = new FlurlClient()
+                .EnableCookies()
+                .WithHeader("User-Agent", UserAgent);
         }
 
         public abstract Task Download();
@@ -59,7 +61,7 @@ namespace Nimbus
             }
         }
 
-        protected virtual void OnStateChange(TrackState state)
+        protected virtual void OnStateChange(MediaProcessState state)
         {
             if (StateChange != null)
             {

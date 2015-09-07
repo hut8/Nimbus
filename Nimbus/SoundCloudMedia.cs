@@ -10,6 +10,9 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Flurl.Http;
+using Flurl;
+using Flurl.Util;
 
 namespace Nimbus
 {
@@ -27,18 +30,6 @@ namespace Nimbus
         private static readonly Regex _clientIdRegex = new Regex(@"[^_]client_id: ?""(?<client_id>\w+)""");
         private static readonly Regex _trackIdRegex = new Regex(@",""id"":(?<track_id>\d+)");
         private static readonly string _streamInfoUrlFormat = @"https://api.soundcloud.com/i1/tracks/{0}/streams?client_id={1}";
-
-        // Make sure the URL looks like this:
-        // https://soundcloud.com/majorlazer/major-lazer-dj-snake-lean-on-feat-mo
-        public static bool CanAcceptUri(Uri uri)
-        {
-            if (!(uri.Host == "soundcloud.com" || uri.Host == "www.soundcloud.com"))
-            {
-                return false;
-            }
-
-            return true;
-        }
 
         public SoundCloudMedia(Uri url)
         {
@@ -58,13 +49,15 @@ namespace Nimbus
         }
 
         protected dynamic _trackData;
-        protected dynamic _fetchTrackData()
+        protected async Task<dynamic> _fetchTrackData()
         {
             // Some information about the track is available here:
             // https://api-v2.soundcloud.com/tracks?urns=soundcloud%3Atracks%3A193781466&client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea&app_version=810b564
             // It looks like the client_id is optional and the app_version is too, but the one provided gives more data
             string trackDataUrl = string.Format("https://api-v2.soundcloud.com/tracks?urns=soundcloud%3Atracks%3A{0}&app_version=810b564", _trackId);
-            string trackJson = _webClient.DownloadString(trackDataUrl);
+            string trackJson = await _client
+                .WithUrl(new Url(trackDataUrl))
+                .GetStringAsync();
             JArray tracksData = JArray.Parse(trackJson);
             return tracksData.Single();
         }
@@ -75,8 +68,8 @@ namespace Nimbus
             {
                 if (_trackData == null)
                 {
-                    _trackData = _fetchTrackData();
-                    OnTitleChange((string)TrackData.title);
+                    _trackData = Task.Run(() => _fetchTrackData()).Result;
+                    OnTitleChange((string)_trackData.title);
                 }
                 return _trackData;
             }
@@ -92,9 +85,11 @@ namespace Nimbus
 
         protected async Task DiscoverData()
         {
-            OnStateChange(TrackState.FetchingMetadata);
+            OnStateChange(MediaProcessState.FetchingMetadata);
             // Download the URL given
-            var html = await _webClient.DownloadStringTaskAsync(URL);
+            var html = await _client
+                .WithUrl(new Url(URL.ToString()))
+                .GetStringAsync();
 
             // Extract the URL from a script tag that looks like this: https://a-v2.sndcdn.com/assets/app-009bd-1ba53b3.js
             HtmlDocument doc = new HtmlDocument();
@@ -107,7 +102,9 @@ namespace Nimbus
 
             // Download the JS file containing the client_id
             // client_id:"02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea"
-            var appJs = await _webClient.DownloadStringTaskAsync(appJsUrl);
+            var appJs = await _client
+                .WithUrl(new Url(appJsUrl))
+                .GetStringAsync();
             string clientId = _clientIdRegex
                 .Matches(appJs)
                 .Cast<Match>()
@@ -129,8 +126,10 @@ namespace Nimbus
             // Find URL of MP3 or the stupid playlist thing
             // https://api.soundcloud.com/i1/tracks/102140448/streams?client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea
             string streamInfoURL = string.Format(_streamInfoUrlFormat, _trackId, clientId);
-            string streamInfoJSON = await _webClient.DownloadStringTaskAsync(streamInfoURL);
-            var urlMap = new { http_mp3_128_url = "", hls_mp3_128_url="" };
+            string streamInfoJSON = await _client
+                .WithUrl(new Url(streamInfoURL))
+                .GetStringAsync();
+            var urlMap = new { http_mp3_128_url = "", hls_mp3_128_url = "" };
             urlMap = JsonConvert.DeserializeAnonymousType(streamInfoJSON, urlMap);
 
             if (!string.IsNullOrWhiteSpace(urlMap.http_mp3_128_url))
@@ -151,7 +150,7 @@ namespace Nimbus
             }
 
             _discovered = true;
-            OnStateChange(TrackState.Idle);
+            OnStateChange(MediaProcessState.Idle);
         }
 
         /// <summary>
@@ -162,7 +161,9 @@ namespace Nimbus
         {
             await Task.Run(async () =>
             {
-                string playlistString = _webClient.DownloadString(new Uri(_songDataURL));
+                string playlistString = await _client
+                    .WithUrl(new Url(_songDataURL))
+                    .GetStringAsync();
                 var urlList = playlistString
                     .Split('\n')
                     .Where(line => !(line.StartsWith("#") || string.IsNullOrWhiteSpace(line)))
@@ -174,7 +175,7 @@ namespace Nimbus
                         urlList.FindIndex(x => x == uri) + 1,
                         urlList.Count,
                         Title));
-                    byte[] fragment = await _webClient.DownloadDataTaskAsync(new Uri(uri));
+                    byte[] fragment = await _client.WithUrl(new Url(uri)).GetBytesAsync();
                     buffer.Write(fragment, 0, fragment.Length);
                 }
                 OnTitleChange(Title);
@@ -184,12 +185,18 @@ namespace Nimbus
 
         protected async Task DownloadDirectMP3()
         {
-            await _webClient.DownloadFileTaskAsync(_songDataURL, DownloadPath);
+            Stream s = await _client
+                .WithUrl(new Url(_songDataURL))
+                .GetStreamAsync();
+            using (var outStream = File.OpenWrite(DownloadPath))
+            {
+                s.CopyTo(outStream);
+            }
         }
 
         protected async Task DownloadMP3()
         {
-            switch(_mediaType)
+            switch (_mediaType)
             {
                 case SoundCloudMediaType.MP3:
                     await DownloadDirectMP3();
@@ -216,20 +223,28 @@ namespace Nimbus
                 }
 
                 // Save the song locally
-                OnStateChange(TrackState.Downloading);
-
-                _webClient = new WebClient();
-                _webClient.DownloadProgressChanged += DownloadProgressChange;
+                OnStateChange(MediaProcessState.Downloading);
                 await DownloadMP3();
-
-                OnStateChange(TrackState.Complete);
+                OnStateChange(MediaProcessState.Complete);
             }
             catch (Exception)
             {
-                OnStateChange(TrackState.Idle);
+                OnStateChange(MediaProcessState.Idle);
                 throw;
             }
         }
 
+
+        // Make sure the URL looks like this:
+        // https://soundcloud.com/majorlazer/major-lazer-dj-snake-lean-on-feat-mo
+        public static bool CanAcceptUri(Uri uri)
+        {
+            if (!(uri.Host == "soundcloud.com" || uri.Host == "www.soundcloud.com"))
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

@@ -64,9 +64,9 @@ namespace Nimbus
             _viewModel.Title = obj;
         }
 
-        void media_ProcessStateChange(TrackState obj)
+        void media_ProcessStateChange(MediaProcessState obj)
         {
-            _viewModel.TrackState = obj;
+            _viewModel.ProcessState = obj;
         }
 
         void _webClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)

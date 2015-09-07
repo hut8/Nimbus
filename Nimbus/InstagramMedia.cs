@@ -20,6 +20,33 @@ namespace Nimbus
         protected string _fullName;
         protected Int32 _mediaCount;
         protected const string _userAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36";
+        protected const string _mediaQueryFormat = @"ig_user({0}) {{ media.after({1}, 12) {{
+              count,
+              nodes {{
+                caption,
+                code,
+                comments {{
+                  count
+                }},
+                date,
+                dimensions {{
+                  height,
+                  width
+                }},
+                display_src,
+                id,
+                is_video,
+                likes {{
+                  count
+                }},
+                owner {{
+                  id
+                }},
+                thumbnail_src
+              }},
+              page_info
+            }} }}";
+
         
         public InstagramMedia(Uri uri)
             : base()
@@ -46,7 +73,6 @@ namespace Nimbus
             _client.HttpClient.DefaultRequestHeaders.Add("X-Instagram-AJAX", "1");
             _client.HttpClient.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
 
-            // page_info
             await Task.Run(async () =>
             {
                 do {
@@ -60,36 +86,7 @@ namespace Nimbus
 
         protected async Task<dynamic> MediaPage(string startCursor)
         {
-            // POST to 
-            // POST Params (urlencoded):
-            var qFormat = @"ig_user(" + _userId + ") { media.after(" + startCursor + @", 12) {
-              count,
-              nodes {
-                caption,
-                code,
-                comments {
-                  count
-                },
-                date,
-                dimensions {
-                  height,
-                  width
-                },
-                display_src,
-                id,
-                is_video,
-                likes {
-                  count
-                },
-                owner {
-                  id
-                },
-                thumbnail_src
-              },
-              page_info
-            }
-             }";
-            string q = qFormat;//string.Format(qFormat, _userId, startCursor);
+            string q = string.Format(_mediaQueryFormat, _userId, startCursor);
 
             dynamic response = await _client
                 .WithUrl(new Flurl.Url("https://instagram.com/query/"))

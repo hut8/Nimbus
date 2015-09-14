@@ -22,11 +22,11 @@ namespace Nimbus
         public string DestinationDirectory { get; set; }
         public string Title { get; set; }
         public MediaProcessState ProcessState { get; set; }
-        public bool IsFetchingMetadata
+        public bool IsRunning
         {
             get
             {
-                return ProcessState == MediaProcessState.FetchingMetadata;
+                return ProcessState != MediaProcessState.Idle;
             }
         }
         public long TotalSize { get; set; }

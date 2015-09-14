@@ -68,7 +68,7 @@
             </Button.Background>
         </Button>
         <Grid Grid.Row="3" Grid.ColumnSpan="2">
-            <ProgressBar IsIndeterminate="{Binding Path=IsFetchingMetadata}"
+            <ProgressBar IsIndeterminate="{Binding Path=IsRunning}"
                          Maximum="{Binding Path=TotalSize}"
                      Value="{Binding Path=DownloadedSize}"
                      Height="30"

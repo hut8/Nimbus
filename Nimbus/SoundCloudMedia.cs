@@ -127,7 +127,7 @@ namespace Nimbus
             // https://api.soundcloud.com/i1/tracks/102140448/streams?client_id=02gUJC0hH2ct1EGOcYXQIzRFU91c72Ea
             string streamInfoURL = string.Format(_streamInfoUrlFormat, _trackId, clientId);
             string streamInfoJSON = await _client
-                .WithUrl(new Url(streamInfoURL))
+                .WithUrl(streamInfoURL)
                 .GetStringAsync();
             var urlMap = new { http_mp3_128_url = "", hls_mp3_128_url = "" };
             urlMap = JsonConvert.DeserializeAnonymousType(streamInfoJSON, urlMap);
@@ -162,7 +162,7 @@ namespace Nimbus
             await Task.Run(async () =>
             {
                 string playlistString = await _client
-                    .WithUrl(new Url(_songDataURL))
+                    .WithUrl(_songDataURL)
                     .GetStringAsync();
                 var urlList = playlistString
                     .Split('\n')
@@ -175,7 +175,7 @@ namespace Nimbus
                         urlList.FindIndex(x => x == uri) + 1,
                         urlList.Count,
                         Title));
-                    byte[] fragment = await _client.WithUrl(new Url(uri)).GetBytesAsync();
+                    byte[] fragment = await _client.WithUrl(uri).GetBytesAsync();
                     buffer.Write(fragment, 0, fragment.Length);
                 }
                 OnTitleChange(Title);
@@ -186,7 +186,7 @@ namespace Nimbus
         protected async Task DownloadDirectMP3()
         {
             Stream s = await _client
-                .WithUrl(new Url(_songDataURL))
+                .WithUrl(_songDataURL)
                 .GetStreamAsync();
             using (var outStream = File.OpenWrite(DownloadPath))
             {

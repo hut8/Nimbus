@@ -16,8 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -94,12 +93,5 @@
                 </TextBlock.Effect>
             </TextBlock>
         </Grid>
-        <TextBox
-            x:Name="LogBox"
-            Text="{Binding LogEntries}"
-            Grid.Row="5" Grid.ColumnSpan="2"
-            VerticalAlignment="Stretch" VerticalContentAlignment="Stretch"
-            MinHeight="35" Background="#BF000000" Foreground="White" IsReadOnly="True"
-            IsUndoEnabled="False" VerticalScrollBarVisibility="Auto"/>
     </Grid>
 </Window>

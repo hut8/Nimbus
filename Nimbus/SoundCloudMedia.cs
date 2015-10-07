@@ -88,7 +88,7 @@ namespace Nimbus
             OnStateChange(MediaProcessState.FetchingMetadata);
             // Download the URL given
             var html = await _client
-                .WithUrl(new Url(URL.ToString()))
+                .WithUrl(URL.ToString())
                 .GetStringAsync();
 
             // Extract the URL from a script tag that looks like this: https://a-v2.sndcdn.com/assets/app-009bd-1ba53b3.js

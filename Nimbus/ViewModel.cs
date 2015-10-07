@@ -26,7 +26,7 @@ namespace Nimbus
         {
             get
             {
-                return ProcessState != MediaProcessState.Idle;
+                return ProcessState != MediaProcessState.Idle && ProcessState != MediaProcessState.Complete;
             }
         }
         public long TotalSize { get; set; }
